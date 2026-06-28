@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget,
-    QSplitter, QSizePolicy,
+    QSplitter, QSizePolicy, QScrollArea, QGridLayout,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QImage, QPixmap
