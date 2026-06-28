@@ -122,24 +122,35 @@ class PreviewWidget(QWidget):
         super().__init__()
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(4)
+        root.setSpacing(0)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
-        # 원본 (작게)
-        orig_wrap = QWidget()
-        ol = QVBoxLayout(orig_wrap)
-        ol.setContentsMargins(2, 2, 2, 2)
-        ol.setSpacing(2)
+        # 왼쪽: 원본 + 이미지 목록
+        left = QWidget()
+        ll = QVBoxLayout(left)
+        ll.setContentsMargins(2, 2, 2, 2)
+        ll.setSpacing(2)
+
         hdr_orig = QLabel("원본")
         hdr_orig.setAlignment(Qt.AlignmentFlag.AlignCenter)
         hdr_orig.setStyleSheet("font-weight: bold;")
         self._orig_view = _ImageView("원본 없음")
-        ol.addWidget(hdr_orig)
-        ol.addWidget(self._orig_view)
-        splitter.addWidget(orig_wrap)
+        ll.addWidget(hdr_orig)
+        ll.addWidget(self._orig_view, stretch=1)
 
-        # 결과 그리드 (크게)
+        hdr_list = QLabel("이미지 목록")
+        hdr_list.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hdr_list.setStyleSheet("font-weight: bold;")
+        self._list = QListWidget()
+        self._list.setFixedHeight(130)
+        self._list.currentTextChanged.connect(self._on_select)
+        ll.addWidget(hdr_list)
+        ll.addWidget(self._list)
+
+        splitter.addWidget(left)
+
+        # 오른쪽: 결과 그리드 전체
         result_wrap = QWidget()
         rl = QVBoxLayout(result_wrap)
         rl.setContentsMargins(2, 2, 2, 2)
@@ -149,25 +160,11 @@ class PreviewWidget(QWidget):
         hdr_result.setStyleSheet("font-weight: bold;")
         self._result_grid = _ResultGrid()
         rl.addWidget(hdr_result)
-        rl.addWidget(self._result_grid)
+        rl.addWidget(self._result_grid, stretch=1)
         splitter.addWidget(result_wrap)
 
         splitter.setSizes([250, 750])
         root.addWidget(splitter, stretch=1)
-
-        # 이미지 목록
-        bottom = QWidget()
-        bottom.setFixedHeight(130)
-        bl = QHBoxLayout(bottom)
-        bl.setContentsMargins(0, 0, 0, 0)
-        lbl = QLabel("이미지 목록")
-        lbl.setFixedWidth(75)
-        lbl.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self._list = QListWidget()
-        self._list.currentTextChanged.connect(self._on_select)
-        bl.addWidget(lbl)
-        bl.addWidget(self._list)
-        root.addWidget(bottom)
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
