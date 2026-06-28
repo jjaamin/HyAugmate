@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 LABELME_VERSION = "1.0.1"
-_DESCRIPTION = "HyAugmate - jamin"
+_DESCRIPTION = "HyAugmate COCO Dataset JSON - jamin"
 
 _PALETTE_BGR = [
     (50,  50,  220), (50,  180, 50),  (220, 100, 50),  (50,  160, 220),
