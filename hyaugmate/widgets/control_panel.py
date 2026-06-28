@@ -108,8 +108,8 @@ class ControlPanel(QScrollArea):
             ("noise_var", "강도 (std px)", 1, 30, 8, 1),
         ])
         self._add_check_sliders(vl, "elastic", "Elastic Transform", [
-            ("elastic_alpha", "변형 강도", 10, 200, 80, 1),
-            ("elastic_sigma", "변형 부드러움", 10, 100, 50, 1),
+            ("elastic_alpha", "변형 강도", 10, 200, 30, 1),
+            ("elastic_sigma", "변형 부드러움", 10, 100, 70, 1),
         ])
         self._add_check(vl, "hist_eq", "Histogram Equalization")
         self._add_check_sliders(vl, "clahe", "CLAHE", [

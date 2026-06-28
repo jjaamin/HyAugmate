@@ -30,8 +30,8 @@ def _build_transform(params: dict) -> A.Compose:
             k += 1
         ops.append(A.GaussianBlur(blur_limit=(k, k), p=1.0))
     if params.get("elastic"):
-        alpha = float(params.get("elastic_alpha", 80))
-        sigma = float(params.get("elastic_sigma", 50))
+        alpha = float(params.get("elastic_alpha", 30))
+        sigma = float(params.get("elastic_sigma", 70))
         ops.append(A.ElasticTransform(
             alpha=alpha, sigma=sigma,
             border_mode=cv2.BORDER_CONSTANT, value=0, mask_value=0,
