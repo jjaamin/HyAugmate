@@ -14,6 +14,8 @@ from .widgets.control_panel import ControlPanel
 from .widgets.preview_widget import PreviewWidget
 
 _IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif"}
+_AUG_KEYS   = ["hflip", "vflip", "rotate", "elastic", "color_jitter",
+               "blur", "noise", "hist_eq", "clahe", "gamma"]
 
 
 class MainWindow(QMainWindow):
@@ -27,6 +29,12 @@ class MainWindow(QMainWindow):
         self._out_folder: str = self._settings.value("outFolder", "")
         self._image_files: list[str] = []
         self._current_image: Optional[str] = None
+
+        # 미리보기 캐시
+        self._cache_image:  Optional[str] = None   # 어떤 이미지를 미리봤는지
+        self._cache_params: dict = {}              # 당시 파라미터
+        self._cache_count:  int  = 0              # 당시 생성 수
+        self._cache_data:   list = []             # [(aug_image, aug_shapes, h, w), ...]
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -116,9 +124,7 @@ class MainWindow(QMainWindow):
             return
 
         params = self._control.get_params()
-        aug_keys = ["hflip", "vflip", "rotate", "color_jitter", "blur", "noise",
-                    "hist_eq", "clahe", "gamma"]
-        if not any(params.get(k) for k in aug_keys):
+        if not any(params.get(k) for k in _AUG_KEYS):
             self._status.showMessage("Augmentation을 하나 이상 선택하세요.")
             return
 
@@ -128,14 +134,24 @@ class MainWindow(QMainWindow):
 
         n = self._control.get_count()
         label_map, ann_info = coco_io.shapes_to_label_map(shapes, h, w)
-        results = []
+
+        cache_data = []
+        overlays   = []
         for _ in range(n):
             aug_image, aug_map = augmentor.augment_once(image, label_map, params)
             aug_shapes = coco_io.label_map_to_shapes(aug_map, ann_info)
             overlay = coco_io.draw_overlay(aug_image, aug_shapes) if aug_shapes else aug_image
-            results.append(overlay)
+            cache_data.append((aug_image.copy(), aug_shapes, h, w))
+            overlays.append(overlay)
             QApplication.processEvents()
-        self._preview.set_results(results)
+
+        # 캐시 저장
+        self._cache_image  = self._current_image
+        self._cache_params = params
+        self._cache_count  = n
+        self._cache_data   = cache_data
+
+        self._preview.set_results(overlays)
         self._status.showMessage(f"미리보기 완료 ({n}개)")
 
     # ── Generate ───────────────────────────────────────────────────────────────
@@ -152,9 +168,7 @@ class MainWindow(QMainWindow):
             return
 
         params = self._control.get_params()
-        aug_keys = ["hflip", "vflip", "rotate", "color_jitter", "blur", "noise",
-                    "hist_eq", "clahe", "gamma"]
-        if not any(params.get(k) for k in aug_keys):
+        if not any(params.get(k) for k in _AUG_KEYS):
             QMessageBox.warning(self, "경고", "Augmentation을 하나 이상 선택하세요.")
             return
 
@@ -162,29 +176,47 @@ class MainWindow(QMainWindow):
         os.makedirs(self._out_folder, exist_ok=True)
 
         total = len(self._image_files) * n
-        done = 0
+        done  = 0
 
         for filename in self._image_files:
-            image, shapes, h, w = self._load_image_and_shapes(filename)
-            if image is None:
-                continue
-
             stem, ext = os.path.splitext(filename)
-            label_map, ann_info = coco_io.shapes_to_label_map(shapes, h, w)
 
-            for i in range(n):
-                aug_image, aug_map = augmentor.augment_once(image, label_map, params)
-                aug_shapes = coco_io.label_map_to_shapes(aug_map, ann_info)
+            # 미리보기 캐시 사용 여부 판단
+            use_cache = (
+                self._cache_data
+                and filename == self._cache_image
+                and self._cache_params == params
+                and self._cache_count  == n
+            )
 
-                out_stem = f"{stem}_aug{i + 1:03d}"
-                coco_io.save_result(
-                    os.path.join(self._out_folder, out_stem + ext),
-                    os.path.join(self._out_folder, out_stem + ".json"),
-                    aug_image, aug_shapes, h, w,
-                )
-                done += 1
-                self._status.showMessage(f"생성 중... {done}/{total}")
-                QApplication.processEvents()
+            if use_cache:
+                for i, (aug_image, aug_shapes, img_h, img_w) in enumerate(self._cache_data):
+                    out_stem = f"{stem}_aug{i + 1:03d}"
+                    coco_io.save_result(
+                        os.path.join(self._out_folder, out_stem + ext),
+                        os.path.join(self._out_folder, out_stem + ".json"),
+                        aug_image, aug_shapes, img_h, img_w,
+                    )
+                    done += 1
+                    self._status.showMessage(f"생성 중 (캐시 사용)... {done}/{total}")
+                    QApplication.processEvents()
+            else:
+                image, shapes, h, w = self._load_image_and_shapes(filename)
+                if image is None:
+                    continue
+                label_map, ann_info = coco_io.shapes_to_label_map(shapes, h, w)
+                for i in range(n):
+                    aug_image, aug_map = augmentor.augment_once(image, label_map, params)
+                    aug_shapes = coco_io.label_map_to_shapes(aug_map, ann_info)
+                    out_stem = f"{stem}_aug{i + 1:03d}"
+                    coco_io.save_result(
+                        os.path.join(self._out_folder, out_stem + ext),
+                        os.path.join(self._out_folder, out_stem + ".json"),
+                        aug_image, aug_shapes, h, w,
+                    )
+                    done += 1
+                    self._status.showMessage(f"생성 중... {done}/{total}")
+                    QApplication.processEvents()
 
         self._status.showMessage(f"완료! {done}개 파일 생성 → {self._out_folder}")
         QMessageBox.information(self, "완료", f"{done}개 파일이 생성되었습니다.\n\n{self._out_folder}")
