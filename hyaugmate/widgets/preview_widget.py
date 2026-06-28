@@ -67,6 +67,11 @@ class _ResultGrid(QScrollArea):
     def set_images(self, images: list) -> None:
         self._clear()
         self._thumbs = []
+        if images:
+            h0, w0 = images[0].shape[:2]
+            self._aspect = h0 / w0 if w0 > 0 else 0.75
+        else:
+            self._aspect = 0.75
         for idx, img in enumerate(images):
             row, col = divmod(idx, self._COLS)
             thumb = _ImageView(f"#{idx + 1}")
@@ -88,7 +93,7 @@ class _ResultGrid(QScrollArea):
                    - margins.left() - margins.right()
                    - spacing * (self._COLS - 1))
         cell_w = max(60, avail_w // self._COLS)
-        cell_h = max(60, int(cell_w * 0.75))
+        cell_h = max(60, int(cell_w * getattr(self, "_aspect", 0.75)))
         for thumb in self._thumbs:
             thumb.setFixedHeight(cell_h)
 

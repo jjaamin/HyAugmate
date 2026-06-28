@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal
 
 
-class ControlPanel(QScrollArea):
+class ControlPanel(QWidget):
     src_folder_changed = pyqtSignal(str)
     out_folder_changed = pyqtSignal(str)
     preview_requested  = pyqtSignal()
@@ -16,19 +16,30 @@ class ControlPanel(QScrollArea):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWidgetResizable(True)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        container = QWidget()
-        self.setWidget(container)
-        vl = QVBoxLayout(container)
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # 상단 스크롤 영역 (폴더 + Augmentation)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        scroll_content = QWidget()
+        vl = QVBoxLayout(scroll_content)
         vl.setSpacing(8)
         vl.setContentsMargins(6, 6, 6, 6)
-
         vl.addWidget(self._build_folder_group())
         vl.addWidget(self._build_aug_group())
-        vl.addWidget(self._build_generate_group())
         vl.addStretch()
+        scroll.setWidget(scroll_content)
+
+        # 하단 고정 생성 패널
+        generate_grp = self._build_generate_group()
+
+        main_layout.addWidget(scroll, stretch=1)
+        main_layout.addWidget(generate_grp)
 
     # ── Folder group ───────────────────────────────────────────────────────────
 
@@ -88,7 +99,7 @@ class ControlPanel(QScrollArea):
         vl = QVBoxLayout(grp)
         vl.setSpacing(4)
 
-        self._aug = {}  # key → (QCheckBox, {param_key: QSlider})
+        self._aug = {}
 
         self._add_check(vl, "hflip", "Horizontal Flip")
         self._add_check(vl, "vflip", "Vertical Flip")
@@ -171,12 +182,13 @@ class ControlPanel(QScrollArea):
         grp = QGroupBox("생성")
         vl = QVBoxLayout(grp)
         vl.setSpacing(6)
+        vl.setContentsMargins(6, 6, 6, 6)
 
         row = QHBoxLayout()
         row.addWidget(QLabel("이미지당 생성 수:"))
         self._count = QSpinBox()
         self._count.setRange(1, 200)
-        self._count.setValue(5)
+        self._count.setValue(6)
         row.addWidget(self._count)
         row.addStretch()
         vl.addLayout(row)
