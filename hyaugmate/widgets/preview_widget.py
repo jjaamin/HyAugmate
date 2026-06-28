@@ -16,7 +16,7 @@ class _ImageView(QLabel):
         super().__init__()
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.setMinimumSize(200, 150)
+        self.setMinimumSize(80, 60)
         self.setStyleSheet("background-color: #1e1e1e; color: #666;")
         self.setText(title)
         self._pixmap: Optional[QPixmap] = None
@@ -59,30 +59,42 @@ class _ResultGrid(QScrollArea):
         self._container.setStyleSheet("background-color: #1e1e1e;")
         self.setWidget(self._container)
         self._grid = QGridLayout(self._container)
-        self._grid.setSpacing(4)
-        self._grid.setContentsMargins(4, 4, 4, 4)
+        self._grid.setSpacing(2)
+        self._grid.setContentsMargins(2, 2, 2, 2)
+        self._thumbs: list[_ImageView] = []
         self._show_placeholder()
 
     def set_images(self, images: list) -> None:
         self._clear()
+        self._thumbs = []
         for idx, img in enumerate(images):
             row, col = divmod(idx, self._COLS)
-            thumb = _ImageView("")
-            thumb.setFixedHeight(220)
+            thumb = _ImageView(f"#{idx + 1}")
             thumb.set_image(img)
-            num = QLabel(f"#{idx + 1}")
-            num.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            num.setStyleSheet("color: #aaa; font-size: 10px;")
-            cell = QWidget()
-            cl = QVBoxLayout(cell)
-            cl.setContentsMargins(0, 0, 0, 0)
-            cl.setSpacing(1)
-            cl.addWidget(thumb)
-            cl.addWidget(num)
-            self._grid.addWidget(cell, row, col)
+            self._thumbs.append(thumb)
+            self._grid.addWidget(thumb, row, col)
+        self._update_thumb_heights()
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._update_thumb_heights()
+
+    def _update_thumb_heights(self) -> None:
+        if not self._thumbs:
+            return
+        margins = self._grid.contentsMargins()
+        spacing = self._grid.spacing()
+        avail_w = (self.viewport().width()
+                   - margins.left() - margins.right()
+                   - spacing * (self._COLS - 1))
+        cell_w = max(60, avail_w // self._COLS)
+        cell_h = max(60, int(cell_w * 0.75))
+        for thumb in self._thumbs:
+            thumb.setFixedHeight(cell_h)
 
     def clear(self) -> None:
         self._clear()
+        self._thumbs = []
         self._show_placeholder()
 
     def _clear(self) -> None:
