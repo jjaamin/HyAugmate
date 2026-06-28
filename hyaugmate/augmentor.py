@@ -29,6 +29,14 @@ def _build_transform(params: dict) -> A.Compose:
         if k % 2 == 0:
             k += 1
         ops.append(A.GaussianBlur(blur_limit=(k, k), p=1.0))
+    if params.get("elastic"):
+        alpha = float(params.get("elastic_alpha", 80))
+        sigma = float(params.get("elastic_sigma", 50))
+        ops.append(A.ElasticTransform(
+            alpha=alpha, sigma=sigma,
+            border_mode=cv2.BORDER_CONSTANT, value=0, mask_value=0,
+            p=1.0,
+        ))
     if params.get("hist_eq"):
         ops.append(A.Equalize(p=1.0))
     if params.get("clahe"):
