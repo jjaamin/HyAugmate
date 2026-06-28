@@ -20,6 +20,10 @@ class _ImageView(QLabel):
         self.setStyleSheet("background-color: #1e1e1e; color: #666;")
         self.setText(title)
         self._pixmap: Optional[QPixmap] = None
+        self._square: bool = False  # True이면 height = width로 고정
+
+    def set_square(self, enabled: bool) -> None:
+        self._square = enabled
 
     def set_image(self, image_bgr: np.ndarray) -> None:
         h, w = image_bgr.shape[:2]
@@ -34,6 +38,10 @@ class _ImageView(QLabel):
         self.setText(text)
 
     def resizeEvent(self, event) -> None:
+        if self._square:
+            w = self.width()
+            if w > 0 and self.height() != w:
+                self.setFixedHeight(w)
         super().resizeEvent(event)
         self._refresh()
 
@@ -136,14 +144,14 @@ class PreviewWidget(QWidget):
         hdr_orig.setAlignment(Qt.AlignmentFlag.AlignCenter)
         hdr_orig.setStyleSheet("font-weight: bold;")
         self._orig_view = _ImageView("원본 없음")
+        self._orig_view.set_square(True)
         ll.addWidget(hdr_orig)
-        ll.addWidget(self._orig_view, stretch=1)
+        ll.addWidget(self._orig_view)
 
         hdr_list = QLabel("이미지 목록")
         hdr_list.setAlignment(Qt.AlignmentFlag.AlignCenter)
         hdr_list.setStyleSheet("font-weight: bold;")
         self._list = QListWidget()
-        self._list.setFixedHeight(130)
         self._list.currentTextChanged.connect(self._on_select)
         ll.addWidget(hdr_list)
         ll.addWidget(self._list)
