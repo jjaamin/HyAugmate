@@ -126,12 +126,17 @@ class MainWindow(QMainWindow):
         if image is None:
             return
 
+        n = self._control.get_count()
         label_map, ann_info = coco_io.shapes_to_label_map(shapes, h, w)
-        aug_image, aug_map = augmentor.augment_once(image, label_map, params)
-        aug_shapes = coco_io.label_map_to_shapes(aug_map, ann_info)
-        aug_overlay = coco_io.draw_overlay(aug_image, aug_shapes) if aug_shapes else aug_image
-        self._preview.set_result(aug_overlay)
-        self._status.showMessage("미리보기 완료")
+        results = []
+        for _ in range(n):
+            aug_image, aug_map = augmentor.augment_once(image, label_map, params)
+            aug_shapes = coco_io.label_map_to_shapes(aug_map, ann_info)
+            overlay = coco_io.draw_overlay(aug_image, aug_shapes) if aug_shapes else aug_image
+            results.append(overlay)
+            QApplication.processEvents()
+        self._preview.set_results(results)
+        self._status.showMessage(f"미리보기 완료 ({n}개)")
 
     # ── Generate ───────────────────────────────────────────────────────────────
 

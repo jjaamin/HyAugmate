@@ -48,6 +48,56 @@ class _ImageView(QLabel):
         super().setPixmap(scaled)
 
 
+class _ResultGrid(QScrollArea):
+    _COLS = 3
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setWidgetResizable(True)
+        self.setStyleSheet("background-color: #1e1e1e;")
+        self._container = QWidget()
+        self._container.setStyleSheet("background-color: #1e1e1e;")
+        self.setWidget(self._container)
+        self._grid = QGridLayout(self._container)
+        self._grid.setSpacing(4)
+        self._grid.setContentsMargins(4, 4, 4, 4)
+        self._show_placeholder()
+
+    def set_images(self, images: list) -> None:
+        self._clear()
+        for idx, img in enumerate(images):
+            row, col = divmod(idx, self._COLS)
+            thumb = _ImageView("")
+            thumb.setFixedHeight(220)
+            thumb.set_image(img)
+            num = QLabel(f"#{idx + 1}")
+            num.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            num.setStyleSheet("color: #aaa; font-size: 10px;")
+            cell = QWidget()
+            cl = QVBoxLayout(cell)
+            cl.setContentsMargins(0, 0, 0, 0)
+            cl.setSpacing(1)
+            cl.addWidget(thumb)
+            cl.addWidget(num)
+            self._grid.addWidget(cell, row, col)
+
+    def clear(self) -> None:
+        self._clear()
+        self._show_placeholder()
+
+    def _clear(self) -> None:
+        while self._grid.count():
+            item = self._grid.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+    def _show_placeholder(self) -> None:
+        lbl = QLabel("미리보기 없음")
+        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl.setStyleSheet("color: #555;")
+        self._grid.addWidget(lbl, 0, 0, 1, self._COLS)
+
+
 class PreviewWidget(QWidget):
     image_selected = pyqtSignal(str)
 
@@ -57,28 +107,38 @@ class PreviewWidget(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(4)
 
-        # Side-by-side image views
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
-        self._orig_view  = _ImageView("원본 없음")
-        self._result_view = _ImageView("미리보기 없음")
+        # 원본 (작게)
+        orig_wrap = QWidget()
+        ol = QVBoxLayout(orig_wrap)
+        ol.setContentsMargins(2, 2, 2, 2)
+        ol.setSpacing(2)
+        hdr_orig = QLabel("원본")
+        hdr_orig.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hdr_orig.setStyleSheet("font-weight: bold;")
+        self._orig_view = _ImageView("원본 없음")
+        ol.addWidget(hdr_orig)
+        ol.addWidget(self._orig_view)
+        splitter.addWidget(orig_wrap)
 
-        for view, title in ((self._orig_view, "원본"), (self._result_view, "결과")):
-            wrap = QWidget()
-            wl = QVBoxLayout(wrap)
-            wl.setContentsMargins(2, 2, 2, 2)
-            wl.setSpacing(2)
-            hdr = QLabel(title)
-            hdr.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            hdr.setStyleSheet("font-weight: bold;")
-            wl.addWidget(hdr)
-            wl.addWidget(view)
-            splitter.addWidget(wrap)
+        # 결과 그리드 (크게)
+        result_wrap = QWidget()
+        rl = QVBoxLayout(result_wrap)
+        rl.setContentsMargins(2, 2, 2, 2)
+        rl.setSpacing(2)
+        hdr_result = QLabel("결과")
+        hdr_result.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hdr_result.setStyleSheet("font-weight: bold;")
+        self._result_grid = _ResultGrid()
+        rl.addWidget(hdr_result)
+        rl.addWidget(self._result_grid)
+        splitter.addWidget(result_wrap)
 
-        splitter.setSizes([500, 500])
+        splitter.setSizes([250, 750])
         root.addWidget(splitter, stretch=1)
 
-        # Image file list
+        # 이미지 목록
         bottom = QWidget()
         bottom.setFixedHeight(130)
         bl = QHBoxLayout(bottom)
@@ -109,11 +169,11 @@ class PreviewWidget(QWidget):
     def set_original(self, image_bgr: np.ndarray) -> None:
         self._orig_view.set_image(image_bgr)
 
-    def set_result(self, image_bgr: np.ndarray) -> None:
-        self._result_view.set_image(image_bgr)
+    def set_results(self, images: list) -> None:
+        self._result_grid.set_images(images)
 
     def clear_result(self) -> None:
-        self._result_view.clear_image("미리보기 없음")
+        self._result_grid.clear()
 
     def _on_select(self, filename: str) -> None:
         if filename:
