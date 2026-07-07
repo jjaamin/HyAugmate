@@ -1,6 +1,6 @@
 # HyAugmate
 
-세그멘테이션 데이터셋 증강 GUI 툴 · HyLabel COCO Dataset JSON 형식 호환
+세그멘테이션 데이터셋 증강 GUI 툴 · HyLabel (Labelme Format) JSON 형식 호환
 
 ---
 
@@ -88,7 +88,7 @@ python run_hyaugmate.py
 
 ## 입출력 형식
 
-- **입력**: 이미지 (jpg/png/bmp 등) + HyLabel COCO Dataset JSON (같은 폴더, 같은 파일명)
+- **입력**: 이미지 (jpg/png/bmp 등) + HyLabel Format JSON (같은 폴더, 같은 파일명)
 - **출력**: `{원본파일명}_aug001.jpg` + `{원본파일명}_aug001.json`
 
 ---
