@@ -179,7 +179,8 @@ class MainWindow(QMainWindow):
         done  = 0
 
         for filename in self._image_files:
-            stem, ext = os.path.splitext(filename)
+            stem = os.path.splitext(filename)[0]
+            ext = ".png"
 
             # 미리보기 캐시 사용 여부 판단
             use_cache = (
