@@ -94,15 +94,17 @@ def save_result(
     h: int,
     w: int,
 ) -> None:
+    os.makedirs(os.path.dirname(out_image_path), exist_ok=True)
     cv2.imwrite(out_image_path, aug_image)
     if not shapes:
         return
+    image_path = os.path.relpath(out_image_path, os.path.dirname(out_json_path)).replace(os.sep, "/")
     with open(out_json_path, "w", encoding="utf-8") as f:
         json.dump({
             "version": LABELME_VERSION,
             "flags": {},
             "shapes": shapes,
-            "imagePath": os.path.basename(out_image_path),
+            "imagePath": image_path,
             "imageData": None,
             "imageHeight": h,
             "imageWidth": w,

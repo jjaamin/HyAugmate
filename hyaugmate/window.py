@@ -197,7 +197,10 @@ class MainWindow(QMainWindow):
             return
 
         n = self._control.get_count()
-        os.makedirs(self._out_folder, exist_ok=True)
+        images_dir = os.path.join(self._out_folder, "images")
+        json_dir   = os.path.join(self._out_folder, "json")
+        os.makedirs(images_dir, exist_ok=True)
+        os.makedirs(json_dir, exist_ok=True)
 
         total = len(self._image_files) * n
         done  = 0
@@ -218,8 +221,8 @@ class MainWindow(QMainWindow):
                 for i, (aug_image, aug_shapes, img_h, img_w) in enumerate(self._cache_data):
                     out_stem = f"{stem}_aug{i + 1:03d}"
                     coco_io.save_result(
-                        os.path.join(self._out_folder, out_stem + ext),
-                        os.path.join(self._out_folder, out_stem + ".json"),
+                        os.path.join(images_dir, out_stem + ext),
+                        os.path.join(json_dir, out_stem + ".json"),
                         aug_image, aug_shapes, img_h, img_w,
                     )
                     done += 1
@@ -235,8 +238,8 @@ class MainWindow(QMainWindow):
                     aug_shapes = coco_io.label_map_to_shapes(aug_map, ann_info)
                     out_stem = f"{stem}_aug{i + 1:03d}"
                     coco_io.save_result(
-                        os.path.join(self._out_folder, out_stem + ext),
-                        os.path.join(self._out_folder, out_stem + ".json"),
+                        os.path.join(images_dir, out_stem + ext),
+                        os.path.join(json_dir, out_stem + ".json"),
                         aug_image, aug_shapes, h, w,
                     )
                     done += 1

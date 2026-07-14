@@ -89,7 +89,7 @@ python run_hyaugmate.py
 ## 입출력 형식
 
 - **입력**: 이미지 (jpg/png/bmp 등) + HyLabel Format JSON (같은 폴더, 같은 파일명)
-- **출력**: `{원본파일명}_aug001.png` + `{원본파일명}_aug001.json`
+- **출력**: `출력폴더/images/{원본파일명}_aug001.png` + `출력폴더/json/{원본파일명}_aug001.json`
 
 ---
 
