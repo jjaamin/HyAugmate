@@ -1,4 +1,5 @@
 from __future__ import annotations
+import contextlib
 import os
 from typing import Optional
 
@@ -16,6 +17,29 @@ from .widgets.preview_widget import PreviewWidget
 _IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif"}
 _AUG_KEYS   = ["hflip", "vflip", "rotate", "elastic", "color_jitter",
                "blur", "noise", "hist_eq", "clahe", "gamma"]
+
+
+@contextlib.contextmanager
+def _suppress_native_stderr():
+    """libtiff 등이 fd 2에 직접 쓰는 'unknown field with tag' 경고 억제 (Python warnings로 안 잡힘)."""
+    try:
+        saved_fd = os.dup(2)
+        devnull_fd = os.open(os.devnull, os.O_WRONLY)
+    except OSError:
+        yield
+        return
+    try:
+        os.dup2(devnull_fd, 2)
+        yield
+    finally:
+        os.dup2(saved_fd, 2)
+        os.close(devnull_fd)
+        os.close(saved_fd)
+
+
+def _imread_quiet(path: str):
+    with _suppress_native_stderr():
+        return cv2.imread(path)
 
 
 class MainWindow(QMainWindow):
@@ -103,7 +127,7 @@ class MainWindow(QMainWindow):
 
     def _show_original(self, filename: str) -> None:
         image_path = os.path.join(self._src_folder, filename)
-        image = cv2.imread(image_path)
+        image = _imread_quiet(image_path)
         if image is None:
             return
         shapes = self._load_shapes(filename)
@@ -226,7 +250,7 @@ class MainWindow(QMainWindow):
 
     def _load_image_and_shapes(self, filename: str):
         image_path = os.path.join(self._src_folder, filename)
-        image = cv2.imread(image_path)
+        image = _imread_quiet(image_path)
         if image is None:
             self._status.showMessage(f"이미지 로드 실패: {filename}")
             return None, [], 0, 0
